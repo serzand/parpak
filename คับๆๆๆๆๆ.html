@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Navigation</title>
+    <style>
+        /* Set the size of the map container */
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Map container -->
+    <div id="map"></div>
+
+    <!-- Form for selecting travel mode -->
+    <div>
+        <label for="travelMode">Select travel mode:</label>
+        <select id="travelMode">
+            <option value="DRIVING">Driving</option>
+            <option value="WALKING">Walking</option>
+            <option value="BICYCLING">Bicycling</option>
+            <option value="TRANSIT">Transit</option>
+            <option value="ANYWHEEL">Anywheel</option> <!-- Add Anywheel option -->
+        </select>
+        <button onclick="calculateAndDisplayRoute()">Navigate</button>
+    </div>
+
+    <!-- Display estimated travel time -->
+    <div id="travelTime"></div>
+    <!-- Display estimated travel cost -->
+    <div id="travelCost"></div>
+
+    <script>
+        var map;
+        var directionsService;
+        var directionsDisplay;
+
+        function initMap() {
+            // Center coordinates for HOW - House of Wisdom ธรรมศาสตร์รังสิต
+            var howLocation = { lat: 14.075628280639648, lng: 100.60191345214844 };
+
+            // Create a map object and set options
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: howLocation, // Set center to HOW location
+                zoom: 15 // Set initial zoom level
+            });
+
+            // Create a DirectionsService object to use the route method and get results
+            directionsService = new google.maps.DirectionsService();
+
+            // Create a DirectionsRenderer object to display route
+            directionsDisplay = new google.maps.DirectionsRenderer();
+
+            // Bind the DirectionsRenderer to the map
+            directionsDisplay.setMap(map);
+
+            // Show current location of the user
+            showCurrentLocation();
+        }
+
+        function showCurrentLocation() {
+            // Get the current user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    var userMarker = new google.maps.Marker({
+                        position: userLocation,
+                        map: map,
+                        title: 'Your Current Location'
+                    });
+
+                    // Center the map on the user's location
+                    map.setCenter(userLocation);
+                }, function() {
+                    // Handle Geolocation errors
+                    handleLocationError(true);
+                });
+            } else {
+                // Browser doesn't support Geolocation
+                handleLocationError(false);
+            }
+        }
+
+        function calculateAndDisplayRoute() {
+            // Get the selected travel mode
+            var selectedMode = document.getElementById('travelMode').value;
+
+            // Get the current user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    // Set destination, origin, and travel mode for the directions request
+                    var request = {
+                        origin: userLocation,
+                        destination: { lat: 14.075628280639648, lng: 100.60191345214844 }, // Set the destination coordinates
+                        travelMode: selectedMode
+                    };
+
+                    // Pass the request to the DirectionsService object to get route
+                    directionsService.route(request, function(response, status) {
+                        if (status == 'OK') {
+                            // Display the route on the map
+                            directionsDisplay.setDirections(response);
+
+                            // Get the estimated travel time
+                            var travelTime = response.routes[0].legs[0].duration.text;
+
+                            // Display the estimated travel time
+                            document.getElementById('travelTime').innerText = 'Estimated travel time: ' + travelTime;
+
+                            // Calculate and display estimated travel cost for Anywheel
+                            if (selectedMode === 'ANYWHEEL') {
+                                // Use the same logic as BICYCLING for Anywheel
+                                var totalMinutes = response.routes[0].legs[0].duration.value / 60;
+                                var estimatedCost = Math.ceil(totalMinutes / 30) * 10; // 10 Baht per 30 minutes
+                                document.getElementById('travelCost').innerText = 'Estimated travel cost: ' + estimatedCost + ' Baht';
+                            } else {
+                                document.getElementById('travelCost').innerText = ''; // Clear travel cost if not using Anywheel
+                            }
+                        } else {
+                            window.alert('Directions request failed due to ' + status);
+                        }
+                    });
+                }, function() {
+                    // Handle Geolocation errors
+                    handleLocationError(true);
+                });
+            } else {
+                // Browser doesn't support Geolocation
+                handleLocationError(false);
+            }
+        }
+
+        // Handle Geolocation errors
+        function handleLocationError(browserHasGeolocation) {
+            console.log('Error: The Geolocation service failed.');
+        }
+    </script>
+
+    <!-- Include the Google Maps JavaScript API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCa-Gfl82_P4J3_tlx2PKNoo6WBCJQyYhE&callback=initMap"></script>
+</body>
+</html>
